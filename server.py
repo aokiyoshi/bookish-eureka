@@ -17,7 +17,7 @@ class Server(CommonMixin):
             ERROR: 'Bad Request'
         }
 
-    def run(self):
+    def init(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(('', DEFAULT_PORT))
@@ -36,4 +36,4 @@ class Server(CommonMixin):
 
 if __name__ == "__main__":
     serv = Server()
-    serv.run()
+    serv.init()
