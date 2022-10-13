@@ -3,16 +3,16 @@ import socket
 import sys
 import time
 
-from common.common_mixin import CommonMixin
 from common.settings import *
+from common import utils
 
 
-class Client(CommonMixin):
-    def __init__(self, addr, port) -> None:
+class Client:
+    def __init__(self, addr, port):
         self.addr = addr
         self.port = port
 
-    def create_presence(self, account_name: str = 'Guest') -> dict:
+    def create_presence(self, account_name: str = 'Guest'):
         return {
             ACTION: PRESENCE,
             TIME: time.time(),
@@ -21,18 +21,19 @@ class Client(CommonMixin):
             }
         }
 
+
     def process_answer(self, msg: dict) -> str:
         if RESPONSE in msg:
             if msg[RESPONSE] == 200:
-                return '200 : OK'
+                return '200: OK'
             return f'400: {msg[ERROR]}'
         return 'Не удалось обработать ответ сервера'
 
     def run(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect((self.addr, self.port))
-        self.send_message(self.create_presence())
-        print(self.process_answer(self.get_message()))
+        utils.send_message(self.client, self.create_presence())
+        print(self.process_answer(utils.get_message(self.client)))
         self.client.close()
 
 
