@@ -11,12 +11,14 @@ def get_message(socket):
     
 def send_message(socket, msg):
     if not isinstance(msg, dict):
-        raise TypeError
+        return 'Ошибка при отправки сообщения {msg}. Не явялется словарем.'
 
     js_message = json.dumps(msg)
     encoded_message = js_message.encode(ENCODING)
 
     socket.send(encoded_message)
+
+    return 'ОК. Сообщение {msg} Отправлено'
 
 def init_sygnal():
     signal.signal(signal.SIGINT, signal_handler)

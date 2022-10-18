@@ -1,18 +1,23 @@
-import json
 import socket
 import sys
 import time
 
-from common.settings import *
+import logs.client_log_config
 from common import utils
+from common.settings import *
 
 
 class Client:
+
+    logger = logging.getLogger('client')
+
     def __init__(self, addr, port):
         self.addr = addr
         self.port = port
 
     def create_presence(self, account_name: str = 'Guest'):
+        self.logger.debug(
+            f'Создание presence-сообщения. Аккаунт: {account_name}')
         return {
             ACTION: PRESENCE,
             TIME: time.time(),
@@ -21,8 +26,8 @@ class Client:
             }
         }
 
-
     def process_answer(self, msg: dict) -> str:
+        self.logger.debug(f'Обработка ответа: {msg}')
         if RESPONSE in msg:
             if msg[RESPONSE] == 200:
                 return '200: OK'
@@ -31,8 +36,11 @@ class Client:
 
     def run(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.logger.debug(f'Попытка подключиться на {self.addr}: {self.port}')
         self.client.connect((self.addr, self.port))
-        utils.send_message(self.client, self.create_presence())
+        self.logger.debug(
+            utils.send_message(self.client, self.create_presence())
+        )
         print(self.process_answer(utils.get_message(self.client)))
         self.client.close()
 
