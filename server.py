@@ -6,12 +6,13 @@ from requests import JSONDecodeError
 import logs.server_log_config
 from common import utils
 from common.settings import *
-
+from logs import server_log_config, logger_decos
 
 class Server:
 
     logger = logging.getLogger('server')
 
+    @logger_decos.log
     def validate(self, msg):
         self.logger.debug(f'Валидация сообщения {msg}')
         if ACTION in msg and msg[ACTION] == PRESENCE and TIME in msg \

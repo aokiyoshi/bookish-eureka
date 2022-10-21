@@ -1,0 +1,18 @@
+2022-10-18 19:58:50,462 DEBUG server.py Сервер запущен
+2022-10-18 19:59:10,697 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666105150.6962345, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:01:45,463 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666105305.4633448, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:09:41,844 INFO server.py Сервер запущен. Адрес: localhost, порт 7777
+2022-10-18 20:09:44,748 DEBUG server.py Клиент: (127.0.0.1:60236), message: {'action': 'presence', 'time': 1666105784.748576, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:09:44,748 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666105784.748576, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:12:50,689 DEBUG server.py Клиент: (127.0.0.1:53456), message: {'action': 'presence', 'time': 1666105970.6893857, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:12:50,690 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666105970.6893857, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:22:16,969 DEBUG server.py Клиент: (127.0.0.1:50122), message: {'action': 'presence', 'time': 1666106536.969476, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:22:16,969 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666106536.969476, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:22:35,001 DEBUG server.py Клиент: (127.0.0.1:50125), message: {'action': 'presence', 'time': 1666106555.001825, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:22:35,001 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666106555.001825, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:24:00,859 DEBUG server.py Клиент: (127.0.0.1:50219), message: {'action': 'presence', 'time': 1666106640.8599608, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:24:00,859 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666106640.8599608, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:24:42,193 INFO server.py Сервер запущен. Адрес: localhost, порт 7777
+2022-10-18 20:24:45,654 DEBUG server.py Клиент: (127.0.0.1:53647), message: {'action': 'presence', 'time': 1666106685.6547406, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:24:45,655 DEBUG server.py Валидация сообщения {'action': 'presence', 'time': 1666106685.6547406, 'user': {'account_name': 'Guest'}}
+2022-10-18 20:24:45,655 DEBUG server.py ОК. Сообщение {msg} Отправлено

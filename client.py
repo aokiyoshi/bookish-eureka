@@ -2,10 +2,9 @@ import socket
 import sys
 import time
 
-import logs.client_log_config
 from common import utils
 from common.settings import *
-
+from logs import logger_decos, client_log_config
 
 class Client:
 
@@ -15,6 +14,7 @@ class Client:
         self.addr = addr
         self.port = port
 
+    @logger_decos.log
     def create_presence(self, account_name: str = 'Guest'):
         self.logger.debug(
             f'Создание presence-сообщения. Аккаунт: {account_name}')
