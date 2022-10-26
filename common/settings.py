@@ -12,7 +12,7 @@ DEFAULT_IP_ADDRESS = '127.0.0.1'
 MAX_CONNECTIONS = 5
 
 # Максимальная длинна сообщения в байтах
-MAX_PACKAGE_LENGTH = 1024
+MAX_PACKAGE_LENGTH = 4096
 # Кодировка проекта
 ENCODING = 'utf-8'
 
