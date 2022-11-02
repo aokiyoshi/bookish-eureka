@@ -5,24 +5,12 @@ import sys
 from .settings import ENCODING, MAX_PACKAGE_LENGTH
 
 
-def get_message(socket):
-    response = socket.recv(MAX_PACKAGE_LENGTH)
-    return json.loads(response.decode(ENCODING))
-    
-def send_message(socket, msg):
-    if not isinstance(msg, dict):
-        return 'Ошибка при отправки сообщения {msg}. Не явялется словарем.'
+def serialize(message):
+    return json.dumps(message).encode(ENCODING)
 
-    js_message = json.dumps(msg)
-    encoded_message = js_message.encode(ENCODING)
+def deserialize(data):
+    try:
+        return json.loads(data.decode())
+    except json.JSONDecodeError:
+        return {'ERROR': 400}
 
-    socket.send(encoded_message)
-
-    return 'ОК. Сообщение {msg} Отправлено'
-
-def init_sygnal():
-    signal.signal(signal.SIGINT, signal_handler)
-
-def signal_handler(signal, frame):
-    print("\nprogram exiting gracefully")
-    sys.exit(0)

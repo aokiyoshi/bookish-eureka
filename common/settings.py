@@ -2,6 +2,7 @@
 import logging
 
 
+
 # Порт по умолчанию для сетевого взаимодействия
 DEFAULT_PORT = 7777
 
@@ -29,3 +30,7 @@ ACCOUNT_NAME = 'account_name'
 PRESENCE = 'presence'
 RESPONSE = 'response'
 ERROR = 'error'
+SEND = 'send'
+RECIEVE = 'recieve'
+MESSAGE = 'message'
+BYE = 'bye'
