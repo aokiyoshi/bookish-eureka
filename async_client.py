@@ -6,7 +6,7 @@ from common.settings import *
 from common.utils import deserialize, serialize
 from logs import client_log_config, logger_decos
 import sys
-
+import aioconsole
 
 class Client:
     """
@@ -49,8 +49,8 @@ class Client:
     @logger_decos.log
     async def send_message(self, data=None):
         if data is None:
-            msg = input('Введите сообщение: ')
-            # msg = sys.stdin.read()
+            # msg = input('Введите сообщение: ')
+            msg = await aioconsole.ainput() 
             if not msg:
                 return None
             data = {
@@ -64,7 +64,7 @@ class Client:
         await self.send(data)
         response = await self.receive()
         if response.get('OK', 400) == 400:
-            print('Сообщение не отправлено!')
+            await aioconsole.aprint('Сообщение не отправлено!')
 
     @logger_decos.log
     async def send_pressence(self):
@@ -86,7 +86,7 @@ class Client:
                 date = datetime.datetime.fromtimestamp(msg.get('date'))
                 user = msg.get('user')
                 message = msg.get('message')
-                print(f'[{date}] {user}: {message}')
+                await aioconsole.aprint(f'[{date}] {user}: {message}')
 
 
 async def send_messages(name):
@@ -96,6 +96,7 @@ async def send_messages(name):
         clnt.username = name
         await clnt.send_message()
         await clnt.close()
+        await asyncio.sleep(0.1)
 
 
 async def read_messages(name):
@@ -105,6 +106,7 @@ async def read_messages(name):
         clnt.username = name
         await clnt.get_messages()
         await clnt.close()
+        await asyncio.sleep(0.1)
 
 
 async def send_pressence(name):
@@ -120,13 +122,17 @@ async def main():
     name = input('Введите имя: ')
     await send_pressence(name)
     if len(params) == 1:
-        await asyncio.gather(read_messages(name), send_messages(name), )
+        await asyncio.gather(read_messages(name), send_messages(name))
     elif params[1] == 'read':
         await read_messages(name)
     elif params[1] == 'send':
         await send_messages(name)
 
+if __name__ == "__main__":
+    try:
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        print('Работа программы завершена.')
 
-loop = asyncio.new_event_loop()
 
-loop.run_until_complete(main())

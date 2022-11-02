@@ -1,18 +1,18 @@
 import asyncio
 from dataclasses import dataclass
-from random import randint
-from typing import Any
-from common.settings import ACTION, MAX_PACKAGE_LENGTH, PRESENCE, TIME
 
+from common.settings import ACTION, MAX_PACKAGE_LENGTH, TIME
 from common.utils import deserialize, serialize
+from logs import logger_decos, server_log_config
 
 messages = []
 users = {}
-from logs import logger_decos, server_log_config
 
-def process_message(bdata: bytes) -> dict:
 
-    # Проверяем, что bdata (binary data) не пустой 
+@logger_decos.log
+def process_message(bdata: bytes):
+
+    # Проверяем, что bdata (binary data) не пустой
     if not bdata:
         return {'ERROR': 406}
 
@@ -41,7 +41,7 @@ def process_message(bdata: bytes) -> dict:
             return {'OK': 200}
 
         # Получить новые сообщения, если новых сообщений нет, возвращаем пустой
-        # список. Проверяется словарь users, в котором для конкретного 
+        # список. Проверяется словарь users, в котором для конкретного
         # пользователя записано последнее прочитанное сообщение.
         case 'get':
             user = data.get('user').get('account_name')
@@ -50,7 +50,7 @@ def process_message(bdata: bytes) -> dict:
             if num == len(messages) - 1:
                 return {'OK': 200, 'data': []}
 
-            response = messages[num:-1]
+            response = messages[num + 1:]
             users[user] = len(messages) - 1
             return {'OK': 200, 'data': response}
 
@@ -66,12 +66,17 @@ def process_message(bdata: bytes) -> dict:
             )
             return {'OK': 201}
 
+        # Заглушка на будущее. Если с сервером будет непрерывная взять и
+        # будет необходимость ее закрывать.
         case 'exit':
             return {}
+
         # Возвращаем ошибку, если действие какое-то другое
         case _:
             return {'ERROR': 'Неизвестное действие'}
 
+
+@logger_decos.log
 async def handle_conn(reader, writer):
     data = await reader.read(MAX_PACKAGE_LENGTH)
     message = data.decode()
@@ -80,20 +85,27 @@ async def handle_conn(reader, writer):
     print(f"Received {message!r} from {addr!r}")
 
     response = process_message(data)
-    
+
     writer.write(serialize(response))
     await writer.drain()
     print("Close the connection")
     writer.close()
 
+
+@logger_decos.log
 async def main():
     server = await asyncio.start_server(
         handle_conn, '127.0.0.1', 8888)
 
     addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
-    print(f'Serving on {addrs}')
+    print(f'Сервер запущен на {addrs}')
 
     async with server:
         await server.serve_forever()
 
-asyncio.run(main())
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print('Сервер отключен. До свидания!')

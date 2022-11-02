@@ -10,7 +10,7 @@ import logs.server_log_config
 
 def log(func_to_log):
     def log_saver(*args, **kwargs):
-        logger_name = 'server' if 'server.py' in sys.argv[0] else 'client'
+        logger_name = 'server' if 'async_serv.py' in sys.argv[0] else 'client'
         LOGGER = logging.getLogger(logger_name)
 
         result = func_to_log(*args, **kwargs)
