@@ -1,23 +1,15 @@
-from threading import Thread
-import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
-def getInput():
-    while True:
 
-        print(input("your name: "))
+async def ainput(prompt: str = "") -> str:
+    with ThreadPoolExecutor(1, "AsyncInput") as executor:
+        return await asyncio.get_event_loop().run_in_executor(executor, input, prompt)
 
-def sameTime():
-    time.sleep(10)
-    while True:
-        print("Hello there")
 
-t1 = Thread(target=getInput)
-t2 = Thread(target=sameTime)
+async def main():
+    name = await ainput("What's your name? ")
+    print(f"Hello, {name}!")
 
-t1.start()
-t2.start()
 
-t1.join()
-t2.join()
-
-print("This always happens last")
+asyncio.run(main())

@@ -1,111 +1,154 @@
 import asyncio
-from dataclasses import dataclass
+import dis
 
-from common.settings import ACTION, MAX_PACKAGE_LENGTH, TIME
+from common.settings import ACTION, DEFAULT_PORT, MAX_PACKAGE_LENGTH, TIME
 from common.utils import deserialize, serialize
 from logs import logger_decos, server_log_config
 
-messages = []
-users = {}
+
+class ServerMeta(type):
+    """
+    Метакласс, который проверяет, что у класса Server не должны быть
+    использованы методы 'connect'
+    """
+    def __new__(cls, clsname, bases, clsdict):
+        for _, value in clsdict.items():
+            try:
+                instructions = dis.get_instructions(value)
+            except TypeError:
+                pass
+            else:
+                for instruction in instructions:
+                    if instruction.argval in ('connect',):
+                        raise ValueError(
+                            'Класс не должен содержать вызовов connect!')
+
+        return type.__new__(cls, clsname, bases, clsdict)
 
 
-@logger_decos.log
-def process_message(bdata: bytes):
+class NonNegative:
+    """Дескриптор на положительное значение порта"""
 
-    # Проверяем, что bdata (binary data) не пустой
-    if not bdata:
-        return {'ERROR': 406}
+    def __init__(self, port):
+        self.port = port
 
-    # Десериализуем
-    data = deserialize(bdata)
+    def __get__(self, instance, owner):
+        return instance.__dict__[self.port]
 
-    # Если нет ключа с action в словаре
-    if ACTION not in data:
-        return {'ERROR': 405}
-
-    # Обрабатываем
-    match data[ACTION]:
-
-        # Сообщение присуствия, возвращаем сообщение ОК
-        # Пишем сообщение о новом пользователе
-        case 'presence':
-            user = data.get('user').get('account_name')
-            users.setdefault(user, 0)
-            messages.append(
-                {
-                    'user': 'Server',
-                    'message': f'{user} присоеденился в чат',
-                    'date': data.get(TIME),
-                }
+    def __set__(self, instance, value):
+        if value < 0:
+            print(
+                f'Номер порта не должен быть отрицательным числом.',
+                f'Выставлен порт {DEFAULT_PORT}'
             )
-            return {'OK': 200}
+            instance.__dict__[self.port] = DEFAULT_PORT
+        else:
+            instance.__dict__[self.port] = value
 
-        # Получить новые сообщения, если новых сообщений нет, возвращаем пустой
-        # список. Проверяется словарь users, в котором для конкретного
-        # пользователя записано последнее прочитанное сообщение.
-        case 'get':
-            user = data.get('user').get('account_name')
-            num = users.get(user)
-
-            if num == len(messages) - 1:
-                return {'OK': 200, 'data': []}
-
-            response = messages[num + 1:]
-            users[user] = len(messages) - 1
-            return {'OK': 200, 'data': response}
-
-        # Отправить сообщение, если все нормально записываем сообщение в список и
-        # клиенту возвращаем код 200
-        case 'send':
-            messages.append(
-                {
-                    'user': data.get('user').get('account_name'),
-                    'message': data.get('message'),
-                    'date': data.get(TIME),
-                }
-            )
-            return {'OK': 201}
-
-        # Заглушка на будущее. Если с сервером будет непрерывная взять и
-        # будет необходимость ее закрывать.
-        case 'exit':
-            return {}
-
-        # Возвращаем ошибку, если действие какое-то другое
-        case _:
-            return {'ERROR': 'Неизвестное действие'}
+    def __delete__(self, instance):
+        del instance.__dict__[self.port]
 
 
-@logger_decos.log
-async def handle_conn(reader, writer):
-    data = await reader.read(MAX_PACKAGE_LENGTH)
-    message = data.decode()
-    addr = writer.get_extra_info('peername')
-
-    print(f"Received {message!r} from {addr!r}")
-
-    response = process_message(data)
-
-    writer.write(serialize(response))
-    await writer.drain()
-    print("Close the connection")
-    writer.close()
+class Database:
+    messages = []
+    users = {}
 
 
-@logger_decos.log
-async def main():
-    server = await asyncio.start_server(
-        handle_conn, '127.0.0.1', 8888)
+class MessageHandler:
 
-    addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
-    print(f'Сервер запущен на {addrs}')
+    def __init__(self, database: Database):
+        self.database = database
 
-    async with server:
-        await server.serve_forever()
+    def presence(self, data):
+        user = data.get('user').get('account_name')
+        self.database.users.setdefault(user, 0)
+        self.database.messages.append(
+            {
+                'user': 'Server',
+                'message': f'{user} присоеденился в чат',
+                'date': data.get(TIME),
+            }
+        )
+        return {'OK': 200}
+
+    def get(self, data):
+        user = data.get('user').get('account_name')
+        last_unread_index = self.database.users.get(user)
+
+        if last_unread_index == len(self.database.messages) - 1:
+            return {'OK': 200, 'data': []}
+
+        response = self.database.messages[last_unread_index + 1:]
+        self.database.users[user] = len(self.database.messages) - 1
+        return {'OK': 200, 'data': response}
+
+    def send(self, data):
+        self.database.messages.append(
+            {
+                'user': data.get('user').get('account_name'),
+                'message': data.get('message'),
+                'date': data.get(TIME),
+            }
+        )
+        return {'OK': 201}
+
+
+class Server(metaclass=ServerMeta):
+
+    port = NonNegative('port')
+
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.handler = MessageHandler(Database())
+
+    def process_message(self, binary_data):
+        data = deserialize(binary_data)
+        return self.handler.__getattribute__(data[ACTION])(data)
+
+    async def handle_request(self, reader, writer):
+        data = await reader.read(MAX_PACKAGE_LENGTH)
+        if not data:
+            return 1
+        message = data.decode()
+        addr = writer.get_extra_info('peername')
+        print(f"Received {message!r} from {addr!r}")
+        response = self.process_message(data)
+        print(f"Response to {addr!r}: {response}")
+        writer.write(serialize(response))
+        await writer.drain()
+        return 0
+
+    async def handle_conn(self, reader, writer):
+        try:
+            while True:
+                result = await asyncio.wait_for(self.handle_request(reader, writer), 300)
+                if result == 1:
+                    break
+        except ConnectionResetError:
+            print('Connection lost!')
+        except asyncio.exceptions.TimeoutError:
+            addr = writer.get_extra_info('peername')
+            print(f'Timeout exit! Bye, {addr!r}!')
+        finally:
+            print("Close the connection")
+            writer.close()
+
+    async def init(self):
+        server = await asyncio.start_server(self.handle_conn, self.host, self.port)
+        addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
+        print(f'Сервер запущен на {addrs}')
+        async with server:
+            await server.serve_forever()
+
+    def start(self):
+        try:
+            asyncio.run(self.init())
+        except KeyboardInterrupt:
+            print('Сервер отключен. До свидания!')
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print('Сервер отключен. До свидания!')
+
+    my_serv = Server('127.0.0.1', 8888)
+    my_serv.start()
