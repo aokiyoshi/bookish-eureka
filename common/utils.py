@@ -14,3 +14,12 @@ def deserialize(data):
     except json.JSONDecodeError:
         return {'ERROR': 400}
 
+
+def _type(value):
+    if isinstance(value, int):
+        return 'INTEGER'
+    elif isinstance(value, float):
+        return 'NUMERIC'
+    else:
+        return 'TEXT'
+        

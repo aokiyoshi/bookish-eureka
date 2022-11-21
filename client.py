@@ -2,31 +2,12 @@ import asyncio
 import datetime
 import time
 
+import aioconsole
+
 from common.settings import *
 from common.utils import deserialize, serialize
 from logs import client_log_config, logger_decos
-import aioconsole
-import dis
-
-
-class ClientMeta(type):
-    """
-    Метакласс, который проверяет, что у класса Client не должны быть
-    использованы методы 'accept', 'listen' и 'socket'
-    """
-    def __new__(cls, clsname, bases, clsdict):
-        for _, value in clsdict.items():
-            try:
-                instructions = dis.get_instructions(value)
-            except TypeError:
-                pass
-            else:
-                for instruction in instructions:
-                    if instruction.argval in ('accept', 'listen', 'socket'):
-                        raise ValueError(
-                            'Класс не должен содержать вызовов accept!')
-
-        return type.__new__(cls, clsname, bases, clsdict)
+from metaclasses import ClientMeta
 
 
 class Client(metaclass=ClientMeta):
@@ -44,6 +25,14 @@ class Client(metaclass=ClientMeta):
 
     @logger_decos.log
     async def close(self):
+        dict = {
+            ACTION: 'quit',
+            TIME: time.time(),
+            USER: {
+                ACCOUNT_NAME: self.username
+            }
+        }
+        await self.send_data(data=dict)
         self.writer.close()
         await self.writer.wait_closed()
 
@@ -93,13 +82,14 @@ class Client(metaclass=ClientMeta):
         response = await self.receive()
         if messages := response.get('data'):
             for msg in messages:
-                date = datetime.datetime.fromtimestamp(msg.get('date'))
-                user = msg.get('user')
-                message = msg.get('message')
+                print(f'{msg=}')
+                date = datetime.datetime.fromtimestamp(float(msg[3]))
+                user = msg[1]
+                message = msg[2]
                 await aioconsole.aprint(f'[{date}] {user}: {message}')
 
     async def init(self):
-        self.reader, self.writer = await asyncio.open_connection('localhost', 8888)
+        self.reader, self.writer = await asyncio.open_connection(DEFAULT_IP_ADDRESS, DEFAULT_PORT)
         name = input('Введите имя: ')
         self.username = name
         await self.send_presence()
@@ -120,6 +110,7 @@ class Client(metaclass=ClientMeta):
         except ConnectionResetError:
             print('Работа программы завершена при помощи команды exit')
         finally:
+            asyncio.run(self.close())
             loop.close()
 
 

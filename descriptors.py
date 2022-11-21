@@ -1,4 +1,8 @@
-class Varchar:
+from common.settings import DEFAULT_PORT
+
+
+class NonNegative:
+    """Дескриптор на положительное значение порта"""
 
     def __init__(self, port):
         self.port = port
@@ -18,8 +22,3 @@ class Varchar:
 
     def __delete__(self, instance):
         del instance.__dict__[self.port]
-
-
-a = Varchar
-a = 109
-print(type(a))
