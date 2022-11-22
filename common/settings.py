@@ -14,6 +14,7 @@ MAX_CONNECTIONS = 5
 
 # Максимальная длинна сообщения в байтах
 MAX_PACKAGE_LENGTH = 4096
+
 # Кодировка проекта
 ENCODING = 'utf-8'
 
@@ -25,6 +26,9 @@ ACTION = 'action'
 TIME = 'time'
 USER = 'user'
 ACCOUNT_NAME = 'account_name'
+
+# База данных
+DATABASE_NAME = 'database.db'
 
 # Прочие ключи, используемые в протоколе
 PRESENCE = 'presence'
