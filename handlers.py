@@ -43,7 +43,7 @@ class MessageHandler:
         if last_read_msg_id == msg_count - 1:
             return {'OK': 200, 'data': []}
 
-        response = self.database.messages.get_after(last_read_msg_id) # Здесь берется слайс, обрати внимение на двоеточие
+        response = self.database.messages.get_after(last_read_msg_id)
         self.database.users.update_read_idx(msg_count - 1, user)
         return {'OK': 200, 'data': response}
 
