@@ -20,7 +20,10 @@ class Server(metaclass=ServerMeta):
 
     def process_message(self, binary_data):
         data = deserialize(binary_data)
-        return self.handler.__getattribute__(data[ACTION])(data)
+        try:
+            return self.handler.__getattribute__(data[ACTION])(data)
+        except AttributeError:
+            return self.handler.error()
 
     async def handle_request(self, reader, writer):
         data = await reader.read(MAX_PACKAGE_LENGTH)

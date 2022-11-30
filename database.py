@@ -1,7 +1,11 @@
+from collections import OrderedDict
+from itertools import chain
 import os
 import sqlite3
 import unittest
 from contextlib import ContextDecorator
+
+from attr import dataclass
 
 from common.settings import DATABASE_NAME
 
@@ -23,10 +27,12 @@ class TableManager:
     conn = DatabaseConnection
 
     def __init__(self, table_name, db, **kwargs):
+        # Параметры
         self.db = db
         self.table_name = table_name
-        self.types = kwargs
+        self.types = OrderedDict(**kwargs)
         self.foreign_keys = []
+        # Генерируем типы для SQL
         for key, val in self.types.items():
             if isinstance(val, str):
                 self.types[key] = val.upper()
@@ -36,11 +42,14 @@ class TableManager:
                     f'FOREIGN KEY({key}) REFERENCES {val.table_name}(id)')
             else:
                 raise TypeError
-
+        # Создаем и закрываем подключение, чтобы создалась база
         with self.conn(self.db) as db:
             pass
 
     def create_table(self):
+        """
+        Создать таблицу
+        """
         vals = ', '.join([f'{key} {val}' for key, val in self.types.items()])
         foreigns = ', ' + \
             ', '.join(self.foreign_keys) if self.foreign_keys else ''
@@ -49,6 +58,9 @@ class TableManager:
             db.executescript(command)
 
         return self
+
+    def serialize(self, data):
+        return [{key: value for key, value in zip(chain(('id',), self.types.keys()), data_tuple)} for data_tuple in data]
 
     def insert(self, **kwargs):
         colums = ', '.join([f'"{key}"' for key in kwargs.keys()])
@@ -59,33 +71,37 @@ class TableManager:
 
         return self
 
-    def select_all(self):
-        with self.conn(self.db) as db:
-            db.execute(f'SELECT * FROM {self.table_name};')
-            return db.fetchall()
-
-    def select_when_id_greater(self, id):
-        with self.conn(self.db) as db:
-            db.execute(f'SELECT * FROM {self.table_name} WHERE id>{id};')
-            return db.fetchall()
-
     def select(self, *args, **kwargs):
         conds = ' AND '.join([f'{cond}' for cond in args])
         args = ' AND '.join(['{} = {!r}'.format(k, v)
                              for k, v in kwargs.items()])
         command = f'SELECT * FROM {self.table_name} WHERE {args}{conds};'
-        print(f'{command}')
+        print(f'{command=}')
         with self.conn(self.db) as db:
             db.execute(command)
-            return db.fetchone()
+            return self.serialize(db.fetchall())
+
+    def select_all(self):
+        with self.conn(self.db) as db:
+            db.execute(f'SELECT * FROM {self.table_name};')
+            return self.serialize(db.fetchall())
+
+    def select_when_id_greater(self, id):
+        """
+        Специфичная для некоторых нужд функция
+        Выбор всех строк, если id больше
+        """
+        with self.conn(self.db) as db:
+            db.execute(f'SELECT * FROM {self.table_name} WHERE id>{id};')
+            return self.serialize(db.fetchall())
 
     def update(self, new_data: dict, **kwargs):
         values = ', '.join(['{} = "{}"'.format(k, v)
                             for k, v in new_data.items()])
-        cond = ' AND '.join(['{}.{} = {!r}'.format(self.table_name, k, v)
+        cond = ' AND '.join(['{}.{} = "{}"'.format(self.table_name, k, v)
                              for k, v in kwargs.items()])
         command = f'UPDATE {self.table_name} SET {values} WHERE {cond};'
-        print(f'{command}')
+        print(f"{command=}")
         with self.conn(self.db) as db:
             db.executescript(command)
 
@@ -95,13 +111,19 @@ class User(TableManager):
 
     def __init__(self, db):
         super().__init__(table_name=self.table_name, db=db,
-                         username='TEXT', info='TEXT', last_read_msg='INTEGER DEFAULT 0')
+                         username='TEXT', info='TEXT', msg_read_date='TEXT')
 
-    def get_last_msg_idx(self, username):
-        return self.select(username=username)[-1]
+    def get_msgs_read_date(self, username):
+        return self.select(username=username)[0].get("msg_read_date", None)
 
-    def update_read_idx(self, new_idx, user):
-        self.update({'last_read_msg': new_idx}, username=user)
+    def update_msg_read_datex(self, date, user):
+        self.update({'msg_read_date': date}, username=user)
+
+    def get_user_id_by_name(self, name):
+        return self.select(username=name)[-1].get('id', None)
+
+    def get_by_id(self, uid):
+        return self.select(id=uid)[0]
 
 
 class ClientHistory(TableManager):
@@ -124,7 +146,7 @@ class Message(TableManager):
             db=db,
             user='TEXT',
             message='TEXT',
-            date='TEXT'
+            date='INTEGER'
         )
 
     def append(self, data):
@@ -133,15 +155,24 @@ class Message(TableManager):
     def __len__(self):
         return len(self.select_all())
 
-    def get_after(self, index):
-        return self.select_when_id_greater(index)
+    def get_after(self, date):
+        command = f'SELECT * from {self.table_name} where {self.table_name}.date > "{date}"'
+        print(f"{command=}")
+        with self.conn(self.db) as db:
+            db.execute(command)
+            return self.serialize(db.fetchall())
 
 
 class Contact(TableManager):
     table_name = 'contacts'
 
     def __init__(self, db):
-        super().__init__(table_name=self.table_name, db=db, owner_id=User, client_id=User)
+        super().__init__(
+            table_name=self.table_name, 
+            db=db, 
+            owner_id=User, 
+            client_id=User
+        )
 
     def insert(self, owner_id, client_id):
         return super().insert(owner_id=owner_id, client_id=client_id)
@@ -194,12 +225,15 @@ class TestTableManager(unittest.TestCase):
 
     def test_insert(self):
         self.tb.insert(name='lorem', a='2')
-        self.assertEqual(self.tb.select_all(), [(1, 'lorem', '2')])
+        self.assertEqual(self.tb.select_all(), [
+                         dict(id=1, name='lorem', a='2')])
 
     def test_select_positive(self):
         self.tb.insert(name='lorem', a='2')
-        self.assertEqual(self.tb.select(id=1), [(1, 'lorem', '2')])
-        self.assertEqual(self.tb.select(name='lorem'), [(1, 'lorem', '2')])
+        self.assertEqual(self.tb.select(id=1), [
+                         dict(id=1, name='lorem', a='2')])
+        self.assertEqual(self.tb.select(name='lorem'), [
+                         dict(id=1, name='lorem', a='2')])
 
     def test_select_negative(self):
         self.tb.insert(name='lorem')
@@ -209,7 +243,8 @@ class TestTableManager(unittest.TestCase):
     def test_update(self):
         self.tb.insert(name='lorem', a='')
         self.tb.update({'name': 'new name', 'a': 'new a'}, id=1)
-        self.assertEqual(self.tb.select_all(), [(1, 'new name', 'new a')])
+        self.assertEqual(self.tb.select_all(), [
+                         dict(id=1, name='new name', a='new a')])
 
     def tearDown(self):
         os.remove(self.db)
@@ -222,7 +257,8 @@ class TestUsers(unittest.TestCase):
     def test_insert(self):
         self.users = User(db='test.db').create_table()
         self.users.insert(username='test', info='lorem')
-        self.assertEqual(self.users.select_all(), [(1, 'test', 'lorem', 0)])
+        self.assertEqual(self.users.select_all(), [dict(
+            id=1, username='test', info='lorem', last_read_msg=0)])
 
     def tearDown(self):
         os.remove(self.db)
@@ -235,7 +271,8 @@ class TestContacts(unittest.TestCase):
     def test_insert(self):
         self.contacts = Contact(db='test.db').create_table()
         self.contacts.insert(owner_id=1, client_id=1)
-        self.assertEqual(self.contacts.select_all(), [(1, 1, 1)])
+        self.assertEqual(self.contacts.select_all(), [
+                         dict(id=1, owner_id=1, client_id=1)])
 
     def tearDown(self):
         os.remove(self.db)
@@ -248,7 +285,8 @@ class TestHistory(unittest.TestCase):
     def test_insert(self):
         self.history = ClientHistory(db='test.db').create_table()
         self.history.insert(login_date=100000, ip_addr='127.0.0.1')
-        self.assertEqual(self.history.select_all(), [(1, 100000, '127.0.0.1')])
+        self.assertEqual(self.history.select_all(), [dict(
+            id=1, login_date=100000, ip_addr='127.0.0.1')])
 
     def tearDown(self):
         os.remove(self.db)
@@ -256,3 +294,8 @@ class TestHistory(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+@dataclass
+class Foo:
+    pass

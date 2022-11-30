@@ -5,7 +5,7 @@ import time
 import aioconsole
 
 from common.settings import *
-from common.utils import deserialize, serialize
+from common.utils import deserialize, now, serialize
 from logs import client_log_config, logger_decos
 from metaclasses import ClientMeta
 
@@ -24,69 +24,58 @@ class Client(metaclass=ClientMeta):
         return deserialize(data)
 
     @logger_decos.log
-    async def close(self):
-        dict = {
-            ACTION: 'quit',
-            TIME: time.time(),
-            USER: {
-                ACCOUNT_NAME: self.username
-            }
-        }
-        await self.send_data(data=dict)
-        self.writer.close()
-        await self.writer.wait_closed()
-
-    @logger_decos.log
-    def generate_dict(self, action, message=None):
+    def generate_dict(self, action, **kwargs):
         dict = {
             ACTION: action,
-            TIME: time.time(),
+            TIME: now(),
             USER: {
                 ACCOUNT_NAME: self.username
             }
         }
-        if message is not None:
-            dict.setdefault(MESSAGE, message)
-        return dict
+        return dict | kwargs
+
+    @logger_decos.log
+    async def close(self):
+        await self.send_data(data=self.generate_dict(action='quit'))
+        self.writer.close()
+        await self.writer.wait_closed()
 
     @logger_decos.log
     async def send_data(self, data):
         await self.send(data)
         response = await self.receive()
+        print(f"{data=} ||| {response=}")
         if response.get('OK', 400) == 400:
-            await aioconsole.aprint('Сообщение не отправлено!')
+            print('Сообщение не отправлено!')
 
     @logger_decos.log
     async def send_presence(self):
         await self.send_data(self.generate_dict(action=PRESENCE))
 
     @logger_decos.log
-    async def send_message(self):
-        msg = await aioconsole.ainput('>>> ')
-        if not msg:
-            return False
-        if msg == '!exit':
-            await self.close()
-        await self.send_data(self.generate_dict(action=SEND, message=msg))
-
-    @logger_decos.log
-    async def get_messages(self):
-        data = {
-            ACTION: 'get',
-            TIME: time.time(),
-            USER: {
-                ACCOUNT_NAME: self.username
-            }
-        }
+    async def get_data(self, data):
         await self.send(data)
         response = await self.receive()
-        if messages := response.get('data'):
+        if messages := response.get('data', []):
             for msg in messages:
-                print(f'{msg=}')
-                date = datetime.datetime.fromtimestamp(float(msg[3]))
-                user = msg[1]
-                message = msg[2]
-                await aioconsole.aprint(f'[{date}] {user}: {message}')
+                date = datetime.datetime.fromtimestamp(float(msg['date']))
+                user = msg.get('user', '')
+                message = msg.get('message', '')
+                print(f'[{date}] {user}: {message}')
+
+    @logger_decos.log
+    async def loop(self):
+        msg = await aioconsole.ainput('>>> ')
+        if msg == '':
+            await self.get_data(self.generate_dict('get'))
+        elif msg == '!exit':
+            await self.close()
+        elif msg == '!contacts':
+            await self.get_data(self.generate_dict(action='get_contacts'))
+        elif msg.split(' ')[0] == '!add' and msg.split(' ')[1]:
+            await self.send_data(self.generate_dict(action='add_contact', contact=msg.split(' ')[1]))
+        else:
+            await self.send_data(self.generate_dict(action=SEND, message=msg))
 
     async def init(self):
         self.reader, self.writer = await asyncio.open_connection(DEFAULT_IP_ADDRESS, DEFAULT_PORT)
@@ -96,8 +85,7 @@ class Client(metaclass=ClientMeta):
 
         while True:
             try:
-                await self.get_messages()
-                await self.send_message()
+                await self.loop()
             except asyncio.exceptions.TimeoutError:
                 pass
 
