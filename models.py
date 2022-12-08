@@ -29,7 +29,6 @@ class ClientHistory(BaseModel):
 class Contact(BaseModel):
     owner = ForeignKeyField(User, backref='contacts')
     client = ForeignKeyField(User)
-    message = TextField()
     created_date = DateTimeField(default=datetime.datetime.now)
 
 

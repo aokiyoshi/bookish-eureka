@@ -24,6 +24,9 @@ class Server(metaclass=ServerMeta):
             return self.handler.__getattribute__(data[ACTION])(data)
         except AttributeError:
             return self.handler.error()
+        except KeyError:
+            print(f'Key Error for {data=}')
+            return self.handler.error()
 
     async def handle_request(self, reader, writer):
         data = await reader.read(MAX_PACKAGE_LENGTH)

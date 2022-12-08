@@ -1,7 +1,5 @@
 import asyncio
-import datetime
 
-import aioconsole
 import PySimpleGUI as sg
 from common.settings import *
 from common.utils import deserialize, now, serialize
@@ -38,46 +36,55 @@ class Client(metaclass=ClientMeta):
         await self.writer.wait_closed()
 
     @logger_decos.log
-    async def send_data(self, data):
-        await self.send(data)
-        response = await self.receive()
-        if response.get('OK', 400) == 400:
-            print('Сообщение не отправлено!')
-        else:
-            print('>')
-
-    @logger_decos.log
     async def get_data(self, data):
         await self.send(data)
         response = await self.receive()
-        if messages := response.get('data', []):
+        messages = response.get('data', [])
+        if messages:
             for msg in messages:
-                date = str(msg['date'])
+                date = msg.get('date', '')
                 user = msg.get('user', '')
                 message = msg.get('message', '')
                 print(f'[{date}] {user}: {message}')
+                
+    @logger_decos.log
+    async def init(self, username='Guest'):
+        self.reader, self.writer = await asyncio.open_connection(DEFAULT_IP_ADDRESS, DEFAULT_PORT)
+        self.username = username
 
     @logger_decos.log
     async def send_presence(self):
         await self.get_data(self.generate_dict(action=PRESENCE))
 
     @logger_decos.log
-    async def get_new_messages(self):
-        await self.get_data(self.generate_dict('get'))
-    
-    @logger_decos.log
-    async def send_message(self, message):
-        await self.get_data(self.generate_dict('send', message=message))
+    async def get_new_messages(self, sender=None):
+        await self.get_data(self.generate_dict('get', sender=sender))
 
-    async def init(self, username='Guest'):
-        self.reader, self.writer = await asyncio.open_connection(DEFAULT_IP_ADDRESS, DEFAULT_PORT)
-        self.username = username
+    @logger_decos.log
+    async def send_message(self, message, reciever=None):
+        if message.startswith('!contacts'):
+            return await self.get_data(self.generate_dict('get_contacts'))
+
+        if message.startswith('!add'):
+            for contact in message.split(' ')[1:]:
+                await self.get_data(self.generate_dict('add_contact', contact=contact))
+            return
+
+        await self.get_data(self.generate_dict('send', message=message, reciever=reciever))
+
+    @logger_decos.log
+    async def get_contact_list(self):
+        await self.send(self.generate_dict('get_contacts'))
+        data = await self.receive()
+        return [contact['user'] for contact in data.get('data', [])]
+
 
 async def test():
     clnt = Client()
-    await clnt.init('Hds')
+    await clnt.init('Yoshi')
     await clnt.send_presence()
     await clnt.send_message('hey!!!')
+    print(await clnt.get_contact_list())
 
 if __name__ == "__main__":
     try:
