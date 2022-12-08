@@ -1,61 +1,120 @@
-import os
-import time
-import unittest
 from common.settings import *
-from database import Database
+from common.utils import now
+from models import *
+import peewee
 
 
 class MessageHandler:
-    
+
     def __init__(self, db=None):
-        if db is None:
-            self.database = Database()
-        else:
-            self.database = db
+        init_db()
         try:
-            self.database.add_user(
-                {
-                    'id': 1,
-                    'username': 'Server', 
-                    'info' : 'Server account'
-                } 
-            )
-        except Exception:
+            User.create(username='Server')
+        except peewee.IntegrityError:
             pass
+
+    def error(self):
+        return {'ERROR': 405}
 
     def presence(self, data):
         user = data.get('user').get('account_name')
-        self.database.add_user( {'username': user, 'info' : ''} )
-        self.database.messages.append(
-            {
-                'user': 'Server',
-                'message': f'{user} присоеденился в чат',
-                'date': data.get(TIME),
-            }
-        )
+        try:
+            User.create(username=user)
+        except peewee.IntegrityError:
+            pass
+        
         return {'OK': 200}
 
     def get(self, data):
-        user = data.get('user').get('account_name')
-        msg_count = len(self.database.messages)
-        last_read_msg_id = self.database.users.get_last_msg_idx(username=user)
-        print(f'{last_read_msg_id=}')
-        if last_read_msg_id == msg_count - 1:
-            return {'OK': 200, 'data': []}
+        user = User.filter(username=data.get('user', {}).get(ACCOUNT_NAME))
+        server_user = User.filter(username='Server')
+        sender = data.get('sender', None)
+        result = []
+        
+        for message in Message.select().where((Message.reciever == user) | (Message.sender == user)).limit(100).order_by(Message.created_date):
+            print(message.message)
+            if message.sender.username == sender or message.reciever.username == sender:
+                result.append({
+                    'id': message.id,
+                    'date': str(message.created_date),
+                    'user': message.sender.username,
+                    'message': message.message
+                })
 
-        response = self.database.messages.get_after(last_read_msg_id)
-        self.database.users.update_read_idx(msg_count - 1, user)
-        return {'OK': 200, 'data': response}
+        return {'OK': 200, 'data': result, 'next': True}
+
 
     def send(self, data):
-        self.database.messages.append(
-            {
-                'user': data.get('user').get('account_name'),
-                'message': data.get('message'),
-                'date': data.get(TIME),
-            }
-        )
+        username=data.get('user').get(ACCOUNT_NAME)
+        
+        if data.get('reciever') is not None:
+            Message.create(
+                sender=User.filter(username=username),
+                reciever=User.filter(username=data.get('reciever')),
+                message=data.get('message')
+            )
+        else:
+            Message.create(
+                sender=User.filter(username=username),
+                reciever=User.filter(username='Server'),
+                message=data.get('message')
+            )
         return {'OK': 201}
+
+    def get_contacts(self, data):
+        user = data.get('user', {}).get(ACCOUNT_NAME)
+        result = []
+        for contact in Contact.filter(owner=User.filter(username=user)):
+            result.append({
+                'user': contact.client.username,
+            })
+        return {'OK': 200, 'data': result}
+
+    def add_contact(self, data):
+        username = data.get('user').get('account_name', '')
+        contact = data.get('contact', '')
+        date = data.get('time')
+        if username == contact:
+            Message.create(
+                sender=User.filter(username=username),
+                reciever=User.filter(username='Server'),
+                message='Нельзя добавляеть самого себя!'
+            )
+            return {
+                'ERROR': 400,
+            }
+        if Contact.select().where((Contact.owner == User.filter(username=username)) & (Contact.client == User.filter(username=contact))):
+            Message.create(
+                sender=User.filter(username='Server'),
+                reciever=User.filter(username=username),
+                message='Такой контакт существует!'
+            )
+            return {
+                'ERROR': 400,
+            }
+        try:
+            Contact.create(
+                owner=User.filter(username=username),
+                client=User.filter(username=contact)
+            )
+            Message.create(
+                sender=User.filter(username=username),
+                reciever=User.filter(username='Server'),
+                message=data.get(f'Контакт {contact} добавлен!')
+            )
+            return {
+                'OK': 201,
+            }
+        except peewee.IntegrityError:
+            Message.create(
+                sender=User.filter(username='Server'),
+                reciever=User.filter(username=username),
+                message=f'Ошибка при добавлении {contact}!'
+            )
+            return {
+                'ERROR': 400,
+            }
+
 
     def quit(self, data):
         user = data.get('user').get('account_name')
@@ -68,47 +127,3 @@ class MessageHandler:
         )
         return {'OK': 200}
 
-
-class TestMessageHandler(unittest.TestCase):
-    
-    def setUp(self):
-        self.db = 'test.db'
-
-    def test_presence(self):
-        test_handler = MessageHandler(db=Database('test.db'))
-        dict = {
-            ACTION: PRESENCE,
-            TIME: time.time(),
-            USER: {
-                ACCOUNT_NAME: 'John'
-            }
-        }
-        print(test_handler.presence(dict))
-
-    def test_get(self):
-        
-        test_handler = MessageHandler(db=Database('test.db'))
-        test_handler.database.messages.append(
-            {
-                'user': 'Server',
-                'message': 'some msg',
-                'date': '',
-            }
-        )
-        dict = {
-            ACTION: 'get',
-            TIME: time.time(),
-            USER: {
-                ACCOUNT_NAME: 'Server'
-            }
-        }
-        print(f'{test_handler.get(dict)=}')
-
-    def tearDown(self):
-        os.remove(self.db)
-
-
-
-if __name__ == "__main__":
-
-    unittest.main()
