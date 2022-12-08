@@ -32,7 +32,6 @@ class MessageHandler:
         result = []
         
         for message in Message.select().where((Message.reciever == user) | (Message.sender == user)).limit(100).order_by(Message.created_date):
-            print(message.message)
             if message.sender.username == sender or message.reciever.username == sender:
                 result.append({
                     'id': message.id,
@@ -41,7 +40,7 @@ class MessageHandler:
                     'message': message.message
                 })
 
-        return {'OK': 200, 'data': result, 'next': True}
+        return {'OK': 200, 'data': result}
 
 
     def send(self, data):
@@ -73,7 +72,6 @@ class MessageHandler:
     def add_contact(self, data):
         username = data.get('user').get('account_name', '')
         contact = data.get('contact', '')
-        date = data.get('time')
         if username == contact:
             Message.create(
                 sender=User.filter(username=username),
