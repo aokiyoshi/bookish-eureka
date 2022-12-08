@@ -43,6 +43,7 @@ class MessageHandler:
 
         return {'OK': 200, 'data': result, 'next': True}
 
+
     def send(self, data):
         username=data.get('user').get(ACCOUNT_NAME)
         
