@@ -11,7 +11,7 @@ class App:
     def __init__(self):
         self.layout = [
             [
-                sg.Listbox(values=['Общий чат'], size=(
+                sg.Listbox(values=[], size=(
                     20, 20), key='contact_list'),
                 sg.Output(size=(100, 25), font=('Helvetica 10'), key='output')
             ],
@@ -36,14 +36,12 @@ class App:
         self.window.TKroot.title(f'Chat: {self.client.username}')
 
         await self.client.send_presence()
-        await self.client.send_message('!add Server')
         await self.update_contacts()
-        
 
         while True:
             event, value = self.window.read(timeout=1000)
 
-            self.selected_contact = value.get('contact_list')
+            self.selected_contact = value.get('contact_list', [])
 
             if event in (sg.WIN_CLOSED, 'EXIT'):
                 raise KeyboardInterrupt
@@ -56,17 +54,28 @@ class App:
                     # Get params
                     query = value['message'].rstrip()
 
+                    if not query:
+                        await self.update_contacts()
+                        continue
+
                     # Trying to send message
                     await self.client.send_message(f'{query}', reciever=self.selected_contact[0])
 
                     if query.startswith('!add'):
                         await self.update_contacts()
 
+                    if query.startswith('!login'):
+                        await self.update_contacts()
+                        self.window.TKroot.title(
+                            f'Chat: {self.client.username}')
+
                 except Exception as e:
-                    print(f'Прозошла ошибка при отправке {e}')
+                    raise Exception(f'Произошла ошибка {e=}')
                 finally:
                     # Clear input
                     self.window['message']('')
+
+            # await self.update_contacts()
 
             self.window['output']('')
             if self.selected_contact:
@@ -76,12 +85,12 @@ class App:
 
 
 async def main():
-    name = input('Введите имя: ')
     app = App()
-    await app.client.init(name)
+    await app.client.init()
     await asyncio.wait([
         asyncio.create_task(app.ui()),
     ])
+    app.client.close()
 
 
 if __name__ == "__main__":

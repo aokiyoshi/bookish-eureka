@@ -18,25 +18,25 @@ class Server(metaclass=ServerMeta):
         self.port = port or DEFAULT_PORT
         self.handler = MessageHandler()
 
-    def process_message(self, binary_data):
+    def process_message(self, binary_data, **kwargs):
         data = deserialize(binary_data)
         try:
-            return self.handler.__getattribute__(data[ACTION])(data)
-        except AttributeError:
-            return self.handler.error()
+            return self.handler.__getattribute__(data[ACTION])(data | kwargs)
         except KeyError:
             print(f'Key Error for {data=}')
             return self.handler.error()
 
     async def handle_request(self, reader, writer):
         data = await reader.read(MAX_PACKAGE_LENGTH)
+
         if not data:
             print('collected empty data')
             return 1
+
         message = data.decode()
         addr = writer.get_extra_info('peername')
         print(f"Received {message!r} from {addr!r}")
-        response = self.process_message(data)
+        response = self.process_message(data, addr=addr)
         print(f"Response to {addr!r}: {response}")
         writer.write(serialize(response))
         await writer.drain()
