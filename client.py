@@ -1,6 +1,5 @@
 import asyncio
 
-import PySimpleGUI as sg
 from common.settings import *
 from common.utils import deserialize, now, serialize
 from logs import client_log_config, logger_decos
@@ -8,30 +7,41 @@ from metaclasses import ClientMeta
 
 
 class Client(metaclass=ClientMeta):
+
     @logger_decos.log
     async def send(self, message):
+        """
+        Метод для отправки сообщения на сервер
+        """
         self.writer.write(serialize(message))
         await self.writer.drain()
 
     @logger_decos.log
     async def receive(self):
+        """
+        Метод для приема сообщения из сервера
+        """
         data = await self.reader.read(MAX_PACKAGE_LENGTH)
         return deserialize(data)
 
     @logger_decos.log
     def generate_dict(self, action, **kwargs):
+        """
+        Генерирует словарь для протокола JIM
+        """
         dict = {
             ACTION: action,
             TIME: now(),
             USER: {
-                ACCOUNT_NAME: self.username
+                ACCOUNT_NAME: self.username,
+                'token': self.token
             }
         }
         return dict | kwargs
 
     @logger_decos.log
     async def close(self):
-        await self.send_data(data=self.generate_dict(action='quit'))
+        await self.send_data(data=self.generate_dict(action=QUIT))
         self.writer.close()
         await self.writer.wait_closed()
 
@@ -39,18 +49,18 @@ class Client(metaclass=ClientMeta):
     async def get_data(self, data):
         await self.send(data)
         response = await self.receive()
-        messages = response.get('data', [])
+        messages = response.get('messages', [])
         if messages:
             for msg in messages:
-                date = msg.get('date', '')
-                user = msg.get('user', '')
-                message = msg.get('message', '')
-                print(f'[{date}] {user}: {message}')
-                
+                print(msg)
+
+        return response
+
     @logger_decos.log
     async def init(self, username='Guest'):
         self.reader, self.writer = await asyncio.open_connection(DEFAULT_IP_ADDRESS, DEFAULT_PORT)
         self.username = username
+        self.token = ''
 
     @logger_decos.log
     async def send_presence(self):
@@ -62,13 +72,22 @@ class Client(metaclass=ClientMeta):
 
     @logger_decos.log
     async def send_message(self, message, reciever=None):
-        if message.startswith('!contacts'):
-            return await self.get_data(self.generate_dict('get_contacts'))
 
         if message.startswith('!add'):
             for contact in message.split(' ')[1:]:
                 await self.get_data(self.generate_dict('add_contact', contact=contact))
             return
+
+        if message.startswith('!login'):
+            _, username, password = message.split(' ')
+            print(username, password)
+            response = await self.get_data(self.generate_dict('login', username=username, password=password))
+            self.token = response.get('data', '')
+            if self.token:
+                self.username = username
+                return True
+
+            return False
 
         await self.get_data(self.generate_dict('send', message=message, reciever=reciever))
 
@@ -81,8 +100,8 @@ class Client(metaclass=ClientMeta):
 
 async def test():
     clnt = Client()
-    await clnt.init('Yoshi')
-    await clnt.send_presence()
+    await clnt.init()
+    await clnt.send_message('!login Test www')
     await clnt.send_message('hey!!!')
     print(await clnt.get_contact_list())
 
@@ -90,5 +109,5 @@ if __name__ == "__main__":
     try:
         loop = asyncio.new_event_loop()
         loop.run_until_complete(test())
-    except Exception as e:
+    except KeyboardInterrupt as e:
         print(f'{e=}')
