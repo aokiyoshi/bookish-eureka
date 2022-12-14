@@ -4,7 +4,6 @@ from models import *
 import peewee
 import secrets
 
-
 class MessageHandler:
 
     def __init__(self, db=None):
