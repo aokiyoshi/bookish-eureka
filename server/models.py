@@ -1,7 +1,9 @@
-from peewee import *
 import datetime
 import hashlib
 import uuid
+
+from peewee import (CharField, DateTimeField, ForeignKeyField, Model,
+                    SqliteDatabase, TextField)
 
 db = SqliteDatabase('db.db')
 

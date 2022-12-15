@@ -1,5 +1,6 @@
 import dis
 
+
 class ServerMeta(type):
     """
     Метакласс, который проверяет, что у класса Server не должны быть
@@ -18,6 +19,7 @@ class ServerMeta(type):
                             'Класс не должен содержать вызовов connect!')
 
         return type.__new__(cls, clsname, bases, clsdict)
+
 
 class ClientMeta(type):
     """

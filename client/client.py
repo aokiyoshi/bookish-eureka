@@ -1,9 +1,11 @@
 import asyncio
 
-from common.settings import *
+from common.settings import (ACCOUNT_NAME, ACTION, DEFAULT_IP_ADDRESS,
+                             DEFAULT_PORT, MAX_PACKAGE_LENGTH, PRESENCE, TIME,
+                             USER, QUIT)
 from common.utils import deserialize, now, serialize
-from logs import client_log_config, logger_decos
-from metaclasses import ClientMeta
+from logs import logger_decos
+from common.metaclasses import ClientMeta
 
 
 class Client(metaclass=ClientMeta):
@@ -41,7 +43,9 @@ class Client(metaclass=ClientMeta):
 
     @logger_decos.log
     async def close(self):
-        await self.send_data(data=self.generate_dict(action=QUIT))
+        await self.send_data(
+            data=self.generate_dict(action=QUIT)
+        )
         self.writer.close()
         await self.writer.wait_closed()
 
@@ -58,7 +62,9 @@ class Client(metaclass=ClientMeta):
 
     @logger_decos.log
     async def init(self, username='Guest'):
-        self.reader, self.writer = await asyncio.open_connection(DEFAULT_IP_ADDRESS, DEFAULT_PORT)
+        self.reader, self.writer = await asyncio.open_connection(
+            DEFAULT_IP_ADDRESS, DEFAULT_PORT
+        )
         self.username = username
         self.token = ''
 
@@ -75,13 +81,17 @@ class Client(metaclass=ClientMeta):
 
         if message.startswith('!add'):
             for contact in message.split(' ')[1:]:
-                await self.get_data(self.generate_dict('add_contact', contact=contact))
+                await self.get_data(
+                    self.generate_dict('add_contact', contact=contact)
+                )
             return
 
         if message.startswith('!login'):
             _, username, password = message.split(' ')
-            print(username, password)
-            response = await self.get_data(self.generate_dict('login', username=username, password=password))
+            response = await self.get_data(
+                self.generate_dict(
+                    'login', username=username, password=password)
+            )
             self.token = response.get('data', '')
             if self.token:
                 self.username = username
@@ -89,7 +99,9 @@ class Client(metaclass=ClientMeta):
 
             return False
 
-        await self.get_data(self.generate_dict('send', message=message, reciever=reciever))
+        await self.get_data(
+            self.generate_dict('send', message=message, reciever=reciever)
+        )
 
     @logger_decos.log
     async def get_contact_list(self):

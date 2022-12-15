@@ -13,7 +13,7 @@ class NonNegative:
     def __set__(self, instance, value):
         if value < 0:
             print(
-                f'Номер порта не должен быть отрицательным числом.',
+                'Номер порта не должен быть отрицательным числом.',
                 f'Выставлен порт {DEFAULT_PORT}'
             )
             instance.__dict__[self.port] = DEFAULT_PORT
