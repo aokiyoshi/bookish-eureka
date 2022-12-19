@@ -1,7 +1,7 @@
 import asyncio
 import PySimpleGUI as sg
 
-from client import Client
+from client.client import Client
 
 
 class App:
@@ -23,8 +23,15 @@ class App:
             ],
         ]
 
-        self.window = sg.Window('Chat window', self.layout, font=(
-            'Helvetica', ' 13'), default_button_element_size=(10, 5), use_default_focus=False, finalize=True, element_padding=0)
+        self.window = sg.Window(
+            'Chat window',
+            self.layout,
+            font=('Helvetica', ' 13'),
+            default_button_element_size=(10, 5),
+            use_default_focus=False,
+            finalize=True,
+            element_padding=0
+        )
 
         self.client = Client()
 
@@ -59,7 +66,9 @@ class App:
                         continue
 
                     # Trying to send message
-                    await self.client.send_message(f'{query}', reciever=self.selected_contact[0])
+                    await self.client.send_message(
+                        f'{query}', reciever=self.selected_contact[0]
+                    )
 
                     if query.startswith('!add'):
                         await self.update_contacts()
@@ -81,7 +90,7 @@ class App:
             if self.selected_contact:
                 await self.client.get_new_messages(self.selected_contact[0])
 
-            await asyncio.sleep(1/144)
+            await asyncio.sleep(1 / 144)
 
 
 async def main():

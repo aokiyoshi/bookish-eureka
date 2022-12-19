@@ -1,12 +1,19 @@
 import asyncio
 
+from dynaconf import Dynaconf
+
+from common.descriptors import NonNegative
+from common.metaclasses import ServerMeta
 from common.settings import (ACTION, DEFAULT_IP_ADDRESS, DEFAULT_PORT,
-                             MAX_PACKAGE_LENGTH, TIME)
+                             MAX_PACKAGE_LENGTH)
 from common.utils import deserialize, serialize
-from descriptors import NonNegative
-from logs import logger_decos, server_log_config
-from handlers import MessageHandler
-from metaclasses import ServerMeta
+from server.handlers import MessageHandler
+
+
+settings = Dynaconf(
+    # Load files in the given order.
+    settings_files=['.\settings.toml', '.secrets.toml'],
+)
 
 
 class Server(metaclass=ServerMeta):
@@ -45,7 +52,8 @@ class Server(metaclass=ServerMeta):
     async def handle_conn(self, reader, writer):
         try:
             while True:
-                result = await asyncio.wait_for(self.handle_request(reader, writer), 300)
+                result = await asyncio.wait_for(
+                    self.handle_request(reader, writer), 300)
                 if result == 1:
                     break
         except ConnectionResetError:
@@ -59,20 +67,19 @@ class Server(metaclass=ServerMeta):
             writer.close()
 
     async def init(self):
-        server = await asyncio.start_server(self.handle_conn, self.host, self.port)
+        server = await asyncio.start_server(
+            self.handle_conn,
+            self.host,
+            self.port,
+        )
         addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
         print(f'Сервер запущен на {addrs}')
         async with server:
             await server.serve_forever()
 
     def start(self):
+        print(settings.test)
         try:
             asyncio.run(self.init())
         except KeyboardInterrupt:
             print('Сервер отключен. До свидания!')
-
-
-if __name__ == "__main__":
-
-    my_serv = Server()
-    my_serv.start()

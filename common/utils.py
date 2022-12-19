@@ -1,11 +1,9 @@
 import json
-import signal
-import sys
 import time
 
-from models import Token
+from server.models import Token
 
-from .settings import ENCODING, MAX_PACKAGE_LENGTH
+from .settings import ENCODING
 
 
 def serialize(message):
@@ -17,6 +15,7 @@ def deserialize(data):
         return json.loads(data.decode())
     except json.JSONDecodeError:
         return {'ERROR': 400}
+
 
 def now():
     return int(time.time())

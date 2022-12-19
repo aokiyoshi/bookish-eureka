@@ -11,6 +11,11 @@ python = "^3.10"
 pysimplegui = "^4.60.4"
 asyncio = "^3.4.3"
 peewee = "^3.15.4"
+flake8 = "^6.0.0"
+autopep8 = "^2.0.0"
+sphinx = "^5.3.0"
+dynaconf = "^3.1.11"
+cx-freeze = "^6.13.1"
 
 
 [build-system]

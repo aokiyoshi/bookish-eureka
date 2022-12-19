@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>common package &#8212; документация Bookish Eureka </title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/translations.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="genindex.html" />
+    <link rel="search" title="Поиск" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="common-package">
+<h1>common package<a class="headerlink" href="#common-package" title="Permalink to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-common.descriptors">
+<span id="common-descriptors-module"></span><h2>common.descriptors module<a class="headerlink" href="#module-common.descriptors" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="common.descriptors.NonNegative">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">common.descriptors.</span></span><span class="sig-name descname"><span class="pre">NonNegative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/common/descriptors.html#NonNegative"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#common.descriptors.NonNegative" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Дескриптор на положительное значение порта</p>
+</dd></dl>
+
+</section>
+<section id="module-common.metaclasses">
+<span id="common-metaclasses-module"></span><h2>common.metaclasses module<a class="headerlink" href="#module-common.metaclasses" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="common.metaclasses.ClientMeta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">common.metaclasses.</span></span><span class="sig-name descname"><span class="pre">ClientMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clsname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clsdict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/common/metaclasses.html#ClientMeta"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#common.metaclasses.ClientMeta" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Метакласс, который проверяет, что у класса Client не должны быть
+использованы методы „accept“, „listen“ и „socket“</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="common.metaclasses.ServerMeta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">common.metaclasses.</span></span><span class="sig-name descname"><span class="pre">ServerMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clsname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clsdict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/common/metaclasses.html#ServerMeta"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#common.metaclasses.ServerMeta" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Метакласс, который проверяет, что у класса Server не должны быть
+использованы методы „connect“</p>
+</dd></dl>
+
+</section>
+<section id="module-common.settings">
+<span id="common-settings-module"></span><h2>common.settings module<a class="headerlink" href="#module-common.settings" title="Permalink to this heading">¶</a></h2>
+<p>Константы</p>
+</section>
+<section id="module-common.utils">
+<span id="common-utils-module"></span><h2>common.utils module<a class="headerlink" href="#module-common.utils" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="common.utils.deserialize">
+<span class="sig-prename descclassname"><span class="pre">common.utils.</span></span><span class="sig-name descname"><span class="pre">deserialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/common/utils.html#deserialize"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#common.utils.deserialize" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="common.utils.login_required">
+<span class="sig-prename descclassname"><span class="pre">common.utils.</span></span><span class="sig-name descname"><span class="pre">login_required</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/common/utils.html#login_required"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#common.utils.login_required" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="common.utils.now">
+<span class="sig-prename descclassname"><span class="pre">common.utils.</span></span><span class="sig-name descname"><span class="pre">now</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/common/utils.html#now"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#common.utils.now" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="common.utils.serialize">
+<span class="sig-prename descclassname"><span class="pre">common.utils.</span></span><span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/common/utils.html#serialize"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#common.utils.serialize" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-common">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-common" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Bookish Eureka</a></h1>
+
+
+
+
+
+
+
+
+<h3>Навигация</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Быстрый поиск</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Искать" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Yoshi.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/common.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
